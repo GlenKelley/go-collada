@@ -7,9 +7,9 @@ import (
 )
 
 type Collada struct {
-    XMLName string      `xml:"COLLADA"`
-    Namespace string    `xml:"xmlns,attr,omitempty"`
-    Version string      `xml:"version,attr"`
+    XMLName string `xml:"COLLADA"`
+    Namespace string `xml:"xmlns,attr,omitempty"`
+    Version string `xml:"version,attr"`
     HasAsset
     LibraryCameras LibraryCameras `xml:"library_cameras,omitempty"`
     LibraryLights LibraryLights `xml:"library_lights,omitempty"`
@@ -18,7 +18,7 @@ type Collada struct {
     LibraryMaterials LibraryMaterials `xml:"library_materials,omitempty"`
     LibraryGeometries LibraryGeometries `xml:"library_geometries,omitempty"`
     LibraryVisualScenes LibraryVisualScenes `xml:"library_visual_scenes,omitempty"`
-    Scene *Scene       `xml:"scene,omitempty"`
+    Scene *Scene `xml:"scene,omitempty"`
     HasExtras
 }
 
