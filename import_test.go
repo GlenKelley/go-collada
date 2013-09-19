@@ -3,7 +3,6 @@ package collada
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -86,7 +85,6 @@ func CompareXml(ar, br io.Reader, t *testing.T) {
 	a := xml.NewDecoder(ar)
 	b := xml.NewDecoder(br)
 	var ea, eb error
-	fmt.Println("compare")
 	for true {
 		var na, nb xml.Token
 		na, ea = nextToken(a)
@@ -140,11 +138,10 @@ func CompareXml(ar, br io.Reader, t *testing.T) {
 			}
 		}
 	}
-	fmt.Println(ea, eb)
 	if ea == nil {
 		t.Error("missing elements")
 	}
 	if eb == nil {
-		t.Error("extra element")
+		t.Error("extra elements")
 	}
 }
