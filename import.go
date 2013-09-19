@@ -1,16 +1,35 @@
 /*
-Package collada implements a schema for importing and exporting collada (.dea) documents
+Package collada implements a schema for importing and exporting collada V1.5 (.dea) documents
 
-Collada 1.5 Specification
+See Collada 1.5 Specification
 http://www.khronos.org/files/collada_spec_1_5.pdf
 
-Only collada 1.5 will be supported
+IMPORTANT
 
-As of this release only a subset of the total schema is interpreted and validation tests should
-be included before this package is considered production read
+Currently, not all of the schema has been completed, classes with
+TODO annotated in the struct definition imply that there is content missing
 
-This collada package aims to provide strongly typed access to a collada document without
-any extra indexing or processing properties, some common indexing will be provided by collada/util
+TESTING
+
+The package test suit validates the correctness of the schema by importing/exporting
+and comparing against an external collada document.
+
+More complex scenes can be added to the test suite to validate completness of the implementation
+
+KNOWN ISSUES
+
+- Partially Complete Schema
+
+Only a subset of all classes have complete definitions,
+this will cause the importer to ignore xml which do not match the struct definitions
+
+- Order of anonymous arrays
+
+In the Node struct, a sequence of transform operations with a strict order is defined,
+however due to the nature of the golang xml unmarshal decoder, this ordering is lost.
+
+Possible solutions invlove manually parsing the node content, but this will add significant
+complexity to the parsing logic, which is at the moment completely declaritive using `xml` tags
 
 */
 package collada
@@ -36,6 +55,15 @@ const (
 	Xup UpAxis = "X_UP"
 	Yup UpAxis = "Y_UP"
 	Zup UpAxis = "Z_UP"
+)
+
+type Opaque string
+
+const (
+	OpaqueAlphaZero = "A_ZERO"
+	OpaqueAlphaOne  = "A_ONE"
+	OpaqueRgbZero   = "RGB_ZERO"
+	OpaqueRgbOne    = "RGB_ONE"
 )
 
 //Animation ategorizes the declaration of animation information.
@@ -139,14 +167,6 @@ type InstanceController struct {
 	HasExtra
 }
 
-//BindMaterial binds a specific material to a piece of geometry, binding varying and uniform parameters at the same time.
-type BindMaterial struct {
-	Param []ParamCore `xml:"param"`
-	HasTechniqueCommon
-	HasTechnique
-	HasExtra
-}
-
 //Joints associates joint, or skeleton, nodes with attribute data.
 type Joints struct {
 	//TODO
@@ -197,11 +217,11 @@ type BoolArray struct {
 
 // FloatArray declares the storage for a homogenous array of floating-point values.
 type FloatArray struct {
-	HasCount
 	HasId
+	HasCount
 	HasName
-	Digits    uint8  `xml:"digits,attr"`
-	Magnitude uint16 `xml:"magnitude,attr"`
+	Digits    uint8  `xml:"digits,attr,omitempty"`
+	Magnitude uint16 `xml:"magnitude,attr,omitempty"`
 	Floats
 }
 
@@ -287,7 +307,7 @@ type Extra struct {
 //Technique (core) Declares the information used to process some portion of the content. Each technique conforms to an associated profile.
 type TechniqueCore struct {
 	Profile string `xml:"profile,attr"`
-	Xmlns   string `xml:"xmlns,attr"`
+	Xmlns   string `xml:"xmlns,attr,omitempty"`
 	XML     string `xml:",innerxml"`
 }
 
@@ -447,7 +467,8 @@ type AmbientCore struct {
 
 //Color describes the color of its parent light element.
 type Color struct {
-	//TODO
+	HasSid
+	Float3
 }
 
 //Directional describes a directional light source.
@@ -534,8 +555,9 @@ type Asset struct {
 
 //COLLADA declares the root of the document that contains some of the content in the COLLADA schema.
 type Collada struct {
-	Version Version `xml:"version,attr"`
+	XMLName string  `xml:"COLLADA"`
 	Xmlns   Uri     `xml:"xmlns,attr,omitempty"`
+	Version Version `xml:"version,attr"`
 	Base    Uri     `xml:"base,attr,omitempty"`
 	HasAsset
 	LibraryAnimationClips []LibraryAnimationClips `xml:"library_animation_clips"`
@@ -543,16 +565,16 @@ type Collada struct {
 	// LibraryArticulatedSystems []LibraryArticulatedSystems `xml:"library_animation_clips"`
 	LibraryCameras     []LibraryCameras     `xml:"library_cameras"`
 	LibraryControllers []LibraryControllers `xml:"library_controllers"`
-	// LibraryEffects []LibraryEffects `xml:"library_effects"`
+	LibraryLights      []LibraryLights      `xml:"library_lights"`
+	LibraryImages      []LibraryImages      `xml:"library_images"`
+	LibraryEffects     []LibraryEffects     `xml:"library_effects"`
 	// LibraryForceFields []LibraryForceFields `xml:"library_force_fields"`
-	LibraryFormulas   []LibraryFormulas   `xml:"library_formulas"`
-	LibraryGeometries []LibraryGeometries `xml:"library_geometries"`
-	// LibraryImages []LibraryImages `xml:"library_images"`
+	LibraryFormulas []LibraryFormulas `xml:"library_formulas"`
 	// LibraryJoints []LibraryJoints `xml:"library_joints"`
 	// LibraryKinematicModels []LibraryKinematicModels `xml:"library_kinematic_models"`
 	// LibraryKinematicScenes []LibraryKinematicScenes `xml:"library_kinematic_scenes"`
-	LibraryLights []LibraryLights `xml:"library_lights"`
-	// LibraryMaterials []LibraryMaterials `xml:"library_materials"`
+	LibraryMaterials  []LibraryMaterials  `xml:"library_materials"`
+	LibraryGeometries []LibraryGeometries `xml:"library_geometries"`
 	// LibraryPhysicsNodes []LibraryPhysicsNodes `xml:"library_physics_nodes"`
 	// LibraryPhysicsMaterials []LibraryPhysicsMaterials `xml:"library_physics_materials"`
 	// LibraryPhysicsScenes []LibraryPhysicsScenes `xml:"library_physics_scenes"`
@@ -575,21 +597,6 @@ type Contributor struct {
 
 //GeographicLocation defines an asset’s location for asset management.
 type GeographicLocation struct {
-	//TODO
-}
-
-//Newparam creates a new, named parameter object and assigns it a type and an initial value.
-type Newparam struct {
-	//TODO
-}
-
-//ParamReference references a predefined parameter.
-type ParamReference struct {
-	//TODO
-}
-
-//Setparam assigns a new value to a previously defined parameter.
-type Setparam struct {
 	//TODO
 }
 
@@ -639,10 +646,10 @@ type Node struct {
 	HasAsset
 	Lookat             []Lookat             `xml:"lookat"`
 	Matrix             []Matrix             `xml:"matrix"`
+	Translate          []Translate          `xml:"translate"`
 	Rotate             []Rotate             `xml:"rotate"`
 	Scale              []Scale              `xml:"scale"`
 	Skew               []Skew               `xml:"skew"`
-	Translate          []Translate          `xml:"translate"`
 	InstanceCamera     []InstanceCamera     `xml:"instance_camera"`
 	InstanceController []InstanceController `xml:"instance_controller"`
 	InstanceGeometry   []InstanceGeometry   `xml:"instance_geometry"`
@@ -712,6 +719,391 @@ type Translate struct {
 	Float3
 }
 
+//Annotate Adds a strongly typed annotation remark to the parent object.
+type Annotate struct {
+	//TODO
+}
+
+//BindVertexInput Binds geometry vertex inputs to effect vertex inputs upon instantiation.
+type BindVertexInput struct {
+	//TODO
+}
+
+//Effect Provides a self-contained description of a COLLADA effect.
+type Effect struct {
+	HasId
+	HasName
+	HasAsset
+	HasAnnotate
+	HasNewparam
+	ProfileBridge *ProfileBridge `xml:"profile_BRIDGE"`
+	ProfileCg     *ProfileCg     `xml:"profile_CG"`
+	ProfileGles   *ProfileGles   `xml:"profile_GLES"`
+	ProfileGles2  *ProfileGles2  `xml:"profile_GLES2"`
+	ProfileGlsl   *ProfileGlsl   `xml:"profile_GLSL"`
+	ProfileCommon *ProfileCommon `xml:"profile_COMMON"`
+	HasExtra
+}
+
+//InstanceEffect Instantiates a COLLADA effect.
+type InstanceEffect struct {
+	HasId
+	HasName
+	HasUrl
+	TechniqueHint []TechniqueHint `xml:"technique_hint"`
+	Setparam      []Setparam      `xml:"setparam"`
+}
+
+//LibraryEffects Provides a library in which to place <effect> assets.
+type LibraryEffects struct {
+	HasId
+	HasName
+	HasAsset
+	Effect []Effect `xml:"effect"`
+	HasExtra
+}
+
+//TechniqueFx Holds a description of the textures, samplers, shaders, parameters, and passes necessary for rendering this effect using one method.
+type TechniqueFx struct {
+	HasId
+	HasSid
+	HasAsset
+	HasAnnotate
+	Blinn      *Blinn      `xml:"blinn"`
+	ConstantFx *ConstantFx `xml:"constant"`
+	Lambert    *Lambert    `xml:"lambert"`
+	Phone      *Phong      `xml:"phong"`
+	Pass       *Pass       `xml:"pass"`
+	HasExtra
+}
+
+//TechniqueHint Adds a hint for a platform of which technique to use in this effect
+type TechniqueHint struct {
+	Platform string `xml:"platform,attr,omitempty"`
+	Ref      string `xml:"ref,attr"`
+	Profile  string `xml:"profile,attr,omitempty"`
+}
+
+//BindMaterial Binds a specific material to a piece of geometry, binding varying and uniform parameters at the same time.
+type BindMaterial struct {
+	Param []ParamCore `xml:"param"`
+	HasTechniqueCommon
+	HasTechnique
+	HasExtra
+}
+
+//InstanceMaterialGeometry Instantiates a COLLADA material resource.
+type InstanceMaterialGeometry struct {
+	//TODO
+}
+
+//LibraryMaterials Provides a library in which to place <material> assets.
+type LibraryMaterials struct {
+	HasId
+	HasName
+	HasAsset
+	Material []Material `xml:"material"`
+	HasExtra
+}
+
+//Material Defines the equations necessary for the visual appearance of geometry and screenspace image processing
+type Material struct {
+	HasId
+	HasName
+	HasAsset
+	InstanceEffect InstanceEffect `xml:"instance_effect"`
+	HasExtra
+}
+
+//Array Creates a parameter of a one-dimensional array type.
+type Array struct {
+	//TODO
+}
+
+//Modifier Provides additional information about the volatility or linkage of a <newparam>declaration.
+type Modifier struct {
+	//TODO
+}
+
+//Newparam Creates a new, named parameter object and assigns it a type and an initial value. See Chapter 5: Core Elements Reference.
+type Newparam struct {
+	//TODO
+}
+
+//ParamReference (reference) References a predefined parameter. See Chapter 5: Core Elements Reference.
+type ParamReference struct {
+	//TODO
+}
+
+//SamplerStates Allows users to modify an effect’s sampler state from a material.
+type SamplerStates struct {
+	//TODO
+}
+
+//Semantic Provides metadata that describes the purpose of a parameter declaration.
+type Semantic struct {
+	//TODO
+}
+
+//Setparam Assigns a new value to a previously defined parameter. See main entry in Chapter 5: Core Elements Reference.
+type Setparam struct {
+	Ref string `xml:"ref,attr"`
+}
+
+//Usertype Creates an instance of a structured class for a parameter.
+type Usertype struct {
+	//TODO
+}
+
+//ProfileBridge Provides support for referencing effect profiles written with external standards.
+type ProfileBridge struct {
+	HasId
+	HasAsset
+	HasNewparam
+}
+
+//ProfileCg Declares a platform-specific representation of an effect written in the NVIDIA®Cg language.
+type ProfileCg struct {
+	//TODO
+}
+
+//ProfileCommon Opens a block of platform-independent declarations for the common, fixed-function shader.
+type ProfileCommon struct {
+	HasId
+	HasAsset
+	HasNewparam
+	HasTechniqueFx
+	HasExtra
+}
+type ProfileGles struct {
+	//TODO
+}
+type ProfileGles2 struct {
+	//TODO
+}
+type ProfileGlsl struct {
+	//TODO
+}
+type Blinn struct {
+	//TODO
+}
+type ColorClear struct {
+	//TODO
+}
+type ColorTarget struct {
+	//TODO
+}
+
+// A type that describes color attributes of fixed-function shader elements
+type FxCommonColorOrTextureType struct {
+	Opaque  Opaque          `xml:"opaque,attr,omitempty"`
+	Color   *Color          `xml:"color"`
+	Param   *ParamReference `xml:"param"`
+	Texture *Texture        `xml:"texture"`
+}
+
+type Texture struct {
+	Texture  string `xml:"texture,attr"`
+	TexCoord string `xml:"texcoord,attr"`
+	HasExtra
+}
+
+// A type that describes the scalar attributes of fixed-function shader elements inside <profile_COMMON> effects. See main entry.
+type FxCommonFloatOrParamType struct {
+	Float *Float          `xml:"float"`
+	Param *ParamReference `xml:"param"`
+}
+
+//Constant Produces a constantly shaded surface that is independent of lighting.
+type ConstantFx struct {
+	//TODO
+}
+
+//DepthClear Specifies whether a render target image is to be cleared, and which value to use.
+type DepthClear struct {
+	//TODO
+}
+
+//DepthTarget Specifies which <image> will receive the depth information from the output of this pass.
+type DepthTarget struct {
+	//TODO
+}
+
+//Draw Instructs the FX Runtime what kind of geometry to submit.
+type Draw struct {
+	//TODO
+}
+
+//Evaluate Contains evaluation elements for a rendering pass.
+type Evaluate struct {
+	//TODO
+}
+
+//InstanceMaterialRendering Instantiates a COLLADA material resource for a screen effect.
+type InstanceMaterialRendering struct {
+	//TODO
+}
+
+//Lambert Produces a diffuse shaded surface that is independent of lighting.
+type Lambert struct {
+	//TODO
+}
+
+//Pass Provides a static declaration of all the render states, shaders, and settings for one rendering pipeline.
+type Pass struct {
+	//TODO
+}
+
+//Phong Produces a shaded surface where the specular reflection is shaded
+type Phong struct {
+	Emission          *FxCommonColorOrTextureType `xml:"emission"`
+	AmbientFx         *FxCommonColorOrTextureType `xml:"ambient"`
+	Diffuse           *FxCommonColorOrTextureType `xml:"diffuse"`
+	Specular          *FxCommonColorOrTextureType `xml:"specular"`
+	Shininess         *FxCommonFloatOrParamType   `xml:"shininess"`
+	Reflective        *FxCommonColorOrTextureType `xml:"reflective"`
+	Reflectivity      *FxCommonFloatOrParamType   `xml:"reflectivity"`
+	Transparent       *FxCommonColorOrTextureType `xml:"transparent"`
+	Transparency      *FxCommonFloatOrParamType   `xml:"transparency"`
+	IndexOfRefraction *FxCommonFloatOrParamType   `xml:"index_of_refraction"`
+}
+
+//According the Phong BRDF approximation.
+type According struct {
+	//TODO
+}
+
+//Render Describes one effect pass to evaluate a scene.
+type Render struct {
+	//TODO
+}
+
+//States Contains all rendering states to set up for the parent pass.
+type States struct {
+	//TODO
+}
+
+//StencilClear Specifies whether a render target image is to be cleared, and which value to use.
+type StencilClear struct {
+	//TODO
+}
+
+//StencilTarget Specifies which <image> will receive the stencil information from the output of this pass
+type StencilTarget struct {
+	//TODO
+}
+
+//Binary Identifies or provides a shader in binary form.
+type Binary struct {
+	//TODO
+}
+
+//BindAttribute Binds semantics to vertex attribute inputs of a shader.
+type BindAttribute struct {
+	//TODO
+}
+
+//BindUniform Binds values to uniform inputs of a shader or binds values to effect parameters upon instantiation.
+type BindUniform struct {
+	//TODO
+}
+
+//Code Provides an inline block of source code.
+type Code struct {
+	//TODO
+}
+
+//Compiler Contains command-line or runtime-invocation options for a shader compiler.
+type Compiler struct {
+	//TODO
+}
+
+//Include Imports source code or precompiled binary shaders into the FX Runtime by referencing an external resource.
+type Include struct {
+	//TODO
+}
+
+//Linker Contains command-line or runtime-invocation options for shader linkers to combine shaders into programs.
+type Linker struct {
+	//TODO
+}
+
+//Program Links multiple shaders together to produce a pipeline for geometry processing.
+type Program struct {
+	//TODO
+}
+type Shader struct {
+	//TODO
+}
+type Sources struct {
+	//TODO
+}
+type Alpha struct {
+	//TODO
+}
+type Argument struct {
+	//TODO
+}
+type Create2d struct {
+	//TODO
+}
+type Create3d struct {
+	//TODO
+}
+type CreateCube struct {
+	//TODO
+}
+type Format struct {
+	//TODO
+}
+type Image struct {
+	//TODO
+}
+type InitFrom struct {
+	//TODO
+}
+type InstanceImage struct {
+	//TODO
+}
+type LibraryImages struct {
+	//TODO
+}
+type Rgb struct {
+	//TODO
+}
+type FxSamplerCommon struct {
+	//TODO
+}
+type Sampler1D struct {
+	//TODO
+}
+type Sampler2D struct {
+	//TODO
+}
+type Sampler3D struct {
+	//TODO
+}
+type SamplerCube struct {
+	//TODO
+}
+type SamplerDepth struct {
+	//TODO
+}
+type SamplerRect struct {
+	//TODO
+}
+type Texcombiner struct {
+	//TODO
+}
+type Texenv struct {
+	//TODO
+}
+
+//TexturePipeline Defines a set of texturing commands that will be converted into multitexturing operations using glTexEnv in regular and combiner mode.
+type TexturePipeline struct {
+	//TODO
+}
+
 type P Ints
 
 type Floats Values
@@ -731,6 +1123,17 @@ type Float4x4 Floats
 type Float4 Floats
 type Float3 Floats
 
+type Float struct {
+	HasSid
+	Value float64 `xml:",chardata"`
+}
+
+type HasNewparam struct {
+	Newparam []Newparam `xml:"newparam"`
+}
+type HasAnnotate struct {
+	Annotate []Annotate `xml:"annotate"`
+}
 type HasSharedInput struct {
 	Input []InputShared `xml:"input"`
 }
@@ -753,7 +1156,7 @@ type HasUrl struct {
 	Url Uri `xml:"url,attr,omitempty"`
 }
 type HasSid struct {
-	Id string `xml:"sid,attr,omitempty"`
+	Sid string `xml:"sid,attr,omitempty"`
 }
 type HasAsset struct {
 	Asset *Asset `xml:"asset,omitempty"`
@@ -770,497 +1173,15 @@ type HasTechniqueCommon struct {
 type HasTechnique struct {
 	TechniqueCore []TechniqueCore `xml:"technique,omitempty"`
 }
+type HasTechniqueFx struct {
+	TechniqueFx []TechniqueFx `xml:"technique,omitempty"`
+}
 type HasP struct {
 	P *P `xml:"p"`
 }
 type HasPs struct {
 	P []P `xml:"p"`
 }
-
-//
-// type LibraryCameras struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Cameras []Camera `xml:"camera"`
-//     HasExtra
-// }
-//
-// type Camera struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Optics Optics `xml:"optics"`
-//     Imager *Imager `xml:"imager"`
-//     HasExtra
-// }
-//
-// type Optics struct {
-//     TechniqueCommon TechniqueCommon `xml:"technique_common"`
-//     Technique []Technique `xml:"technique,omitempty"`
-//     HasExtra
-// }
-//
-// type Imager struct {
-//     //TODO
-// }
-//
-// type LibraryLights struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Lights []Light `xml:"light"`
-//     HasExtra
-// }
-//
-// type Light struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     TechniqueCommon TechniqueCommon `xml:"technique_common"`
-//     Techniques []Technique `xml:"technique"`
-//     HasExtra
-// }
-//
-// type LibraryEffects struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Effects []Effect `xml:"effect"`
-//     HasExtra
-// }
-//
-// type Effect struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     // Annotations []Annotate `xml:"annotate"`
-//     Images []Image `xml:"image,omitempty"`
-//     // NewParams []NewParam `xml:"newparam"`
-//     ProfileCommon *ProfileCommon `xml:"profile_COMMON,omitempty"`
-//     ProfileGLES *ProfileGLES `xml:"profile_GLES,omitempty"`
-//     ProfileCG *ProfileCG `xml:"profile_CG,omitempty"`
-//     ProfileGLSL *ProfileGLSL `xml:"profile_GLSL,omitempty"`
-//     HasExtra
-// }
-//
-// type ProfileCommon struct {
-//     XML string `xml:",innerxml"`
-// }
-// type ProfileCG struct {
-//     XML string `xml:",innerxml"`
-// }
-// type ProfileGLES struct {
-//     XML string `xml:",innerxml"`
-// }
-// type ProfileGLSL struct {
-//     XML string `xml:",innerxml"`
-// }
-//
-// type Annotate struct {
-//
-// }
-//
-// type LibraryImages struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Images []Image `xml:"image"`
-//     HasExtra
-// }
-//
-// type Image struct {
-//     HasId
-//     HasName
-//     Format string `xml:"token,attr"`
-//     Height uint `xlm:"height,attr"`
-//     Width uint `xml:"width,attr"`
-//     Depth uint `xml:"depth,attr"`
-//     HasAsset
-//     Data string `xml:"data,chardata"`
-//     InitFrom string `xml:"init_from"`
-//     HasExtra
-// }
-//
-// type LibraryMaterials struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Materials []Material `xml:"material"`
-//     HasExtra
-// }
-//
-// type Material struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     InstanceEffect InstanceEffect `xml:"instance_effect"`
-//     HasExtra
-// }
-//
-// type InstanceEffect struct {
-//     HasUrl
-//     HasSid
-//     HasName
-//     //TODO
-//     HasExtra
-// }
-//
-// type LibraryVisualScenes struct {
-//     Scenes []VisualScene `xml:"visual_scene"`
-// }
-//
-// type LibraryGeometries struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     HasExtra
-//     Geometries []Geometry `xml:"geometry"`
-// }
-//
-// type Geometry struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     Meshes []Mesh `xml:"mesh"`
-//     ConvexMeshes []ConvexMesh `xml:"convex_mesh"`
-//     Splies []Spline `xml:"spline"`
-//     HasExtra
-// }
-//
-// type Mesh struct {
-//     Sources []Source `xml:"source"`
-//     Vertices Vertices `xml:"vertices"`
-//     Lines []Lines `xml:"lines"`
-//     LineStrips []LineStrips `xml:"linestrips"`
-//     Polygons []Polygons `xml:"polygons"`
-//     Polylists []Polylist `xml:"polylist"`
-//     Triangles []Triangles `xml:"triangles"`
-//     Trifans []Trifans `xml:"trifans"`
-//     Tristrips []Tristrips `xml:"tristrips"`
-//     HasExtra
-// }
-//
-// type Vertices struct {
-//     HasId
-//     HasName
-//     HasExtra
-//     Inputs []Input `xml:"input"`
-// }
-//
-// type Input struct {
-//     Offset uint `xml:"offset,attr,omitempty"`
-//     Semantic string `xml:"semantic,attr,omitempty"`
-//     Source string `xml:"source,attr,omitempty"`
-//     Set uint `xml:"set,attr,omitempty"`
-// }
-//
-// type BasicGeometry struct {
-//     HasName
-//     Count uint `xml:"count,attr"`
-//     Material string `xml:"material,attr"`
-//     HasExtra
-//     Inputs []Input `xml:"input"`
-//     P string `xml:"p"`
-// }
-//
-// type Lines BasicGeometry
-// type LineStrips BasicGeometry
-// type Triangles BasicGeometry
-// type Trifans BasicGeometry
-// type Tristrips BasicGeometry
-//
-// type Polylist struct {
-//     BasicGeometry
-//     VCount string `xml:"vcount"`
-// }
-//
-// type Polygons struct {
-//     BasicGeometry
-//     Ph Ph `xml:"ph"`
-// }
-//
-// type Ph struct {
-//     P string `xml:"p"`
-//     H string `xml:"h"`
-// }
-//
-// type Source struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     IdRef *IdRefArray `xml:"IDREF_array"`
-//     Name *NameArray `xml:"Name_array"`
-//     Bool *BoolArray `xml:"bool_array"`
-//     Float *FloatArray `xml:"float_array"`
-//     Int *IntArray `xml:"int_array"`
-//     TechniqueCommon TechniqueCommon `xml:"technique_common"`
-//     Techniques []Technique `xml:"technique"`
-// }
-//
-// type ValueArray struct {
-//     HasId
-//     HasName
-//     Count uint `xml:"count,attr"`
-//     Values string `xml:",chardata"`
-// }
-//
-// type IdRefArray ValueArray
-//
-// type IntArray struct {
-//     ValueArray
-//     MinInclusive int64 `xml:"minInclusive,attr,omitempty"`
-//     MaxInclusive int64 `xml:"maxInclusive,attr,omitempty"`
-// }
-//
-// type FloatArray struct {
-//     ValueArray
-//     Digits int `xml:"digits,attr,omitempty"`
-//     Magnitude int `xml:"magnitude,attr,omitempty"`
-// }
-//
-// type BoolArray ValueArray
-// type NameArray ValueArray
-//
-// type ConvexMesh struct {
-//     Mesh
-//     ConvexHullOf string `xml:"convex_hull_of"`
-// }
-//
-// type Spline struct {
-//     //TODO
-// }
-//
-// type Asset struct {
-//     Contributor     []Contributor `xml:"contributor,omitempty"`
-//     Created         string `xml:"created,omitempty"`
-//     Keywords        string `xml:"keywords,omitempty"`
-//     Modified        string `xml:"modified,omitempty"`
-//     Revision        string `xml:"revision,omitempty"`
-//     Subject         string `xml:"subject,omitempty"`
-//     Title           string `xml:"title,omitempty"`
-//     Unit            string `xml:"unit,omitempty"`
-//     UpAxis          string `xml:"up_axis,omitempty"`
-// }
-//
-// type Contributor struct {
-//     Author          string `xml:"author,omitempty"`
-//     AuthoringTool   string `xml:"authoring_tool,omitempty"`
-//     Comments        string `xml:"comments,omitempty"`
-//     Copyright       string `xml:"copyright,omitempty"`
-//     SourceData      string `xml:"sourceData,omitempty"`
-// }
-//
-// type Unit struct {
-//     HasName
-//     Meter float64   `xml:"meter,attr"`
-// }
-//
-// type Extra struct {
-//     HasId
-//     HasName
-//     HasType
-//     HasAsset
-//     Techniques []Technique `xml:"technique"`
-// }
-//
-// type Scene struct {
-//     HasExtra
-//     // Physics InstanceWithExtra    `xml:"instance_physics_scene"`
-//     Visual InstanceWithExtra      `xml:"instance_visual_scene"`
-// }
-//
-// type VisualScene struct {
-//     HasId
-//     HasName
-//     HasAsset
-//     HasExtra
-//     HasNodes
-//     Evaluate []EvaluateScene    `xml:"evaluate_scene"`
-// }
-//
-// type Node struct {
-//     HasId
-//     HasName
-//     HasSid
-//     HasType
-//     Layer   string    `xml:"layer,attr"`
-//     HasAsset
-//     HasNodes
-//     HasExtra
-//     InstanceCamera  []InstanceWithExtra   `xml:"instance_camera"`
-//     InstanceController []InstanceController   `xml:"instance_controller"`
-//     InstanceGeometry []InstanceGeometry   `xml:"instance_geometry"`
-//     InstanceLight   []InstanceWithExtra   `xml:"instance_light"`
-//     InstanceNode    []InstanceWithExtra   `xml:"instance_node"`
-//
-//     LookAt  []LookAt      `xml:"lookat"`
-//     Matrix  []Matrix      `xml:"matrix"`
-//     Rotate  []Rotate      `xml:"rotate"`
-//     Scale   []Scale       `xml:"scale"`
-//     Skew    []Skew        `xml:"skew"`
-//     Translate []Translate `xml:"translate"`
-// }
-//
-// type Translate V3
-// type Rotate V3
-// type Scale V3
-// type Skew V3
-// type LookAt M3
-// type Matrix M4
-// type Uri string
-//
-// type InstanceWithExtra struct {
-//     HasSid
-//     HasName
-//     HasUrl
-//     HasExtra
-// }
-//
-// type InstanceController struct {
-//     //Skeleton
-//     //BindMaterial
-//     HasExtra
-// }
-//
-// type InstanceGeometry struct {
-//     HasUrl
-//     HasExtra
-//     BindMaterial *BindMaterial `xml:"bind_material"`
-// }
-//
-// type BindMaterial struct {
-//     HasExtra
-//     TechniqueCommon []TechniqueCommon `xml:"technique_common"`
-//     Technique []Technique `xml:"technique"`
-// }
-//
-// type Technique struct {
-//     Profile string `xml:"profile,attr"`
-//     Content string `xml:",innerxml"`
-// }
-//
-// type TechniqueCommon struct {
-//     Content string `xml:",innerxml"`
-// }
-//
-// type InstanceMaterial struct {
-//     HasSid
-//     HasName
-//     HasExtra
-//     Symbol string `xml:"symbol"`
-//     Target string `xml:"target"`
-//     // Bind []Bind `xml:"bind"`
-//     // BindVertexInput `xml:"bind_vertex_input"`
-// }
-//
-// type EvaluateScene struct {
-//     //TODO
-// }
-//
-//
-// type HasSid struct {
-//     Sid string `xml:"sid,attr,omitempty"`
-// }
-//
-// type HasName struct {
-//     Name string `xml:"name,attr,omitempty"`
-// }
-//
-// type HasUrl struct {
-//     Url string `xml:"url,attr,omitempty"`
-// }
-//
-// type V3 struct {
-//     HasSid
-//     V string `xml:",chardata"`
-// }
-//
-// type V4 struct {
-//     HasSid
-//     V string `xml:",chardata"`
-// }
-//
-// type M3 struct {
-//     HasSid
-//     V string `xml:",chardata"`
-// }
-//
-// type M4 struct {
-//     HasSid
-//     V string `xml:",chardata"`
-// }
-//
-// type HasId struct {
-//     Id string `xml:"id,attr,omitempty"`
-// }
-//
-// type HasAsset struct {
-//     Asset *Asset `xml:"asset,omitempty"`
-// }
-//
-// type HasExtra struct {
-//     Extras []Extra `xml:"extra,omitempty"`
-// }
-//
-// type HasNodes struct {
-//     Nodes []Node `xml:"node,omitempty"`
-// }
-
-//     Library_Geometries    LibraryGeometries
-//     Library_Visual_Scenes LibraryVisualScenes
-// }
-//
-// type LibraryGeometries struct{
-//     XMLName  xml.Name   `xml:"library_geometries"`
-//     Geometry []Geometry
-// }
-//
-// type Geometry struct{
-//     XMLName xml.Name  `xml:"geometry"`
-//     Id      string    `xml:"attr"`
-//     Mesh    Mesh
-// }
-//
-// type Mesh struct {
-//     XMLName  xml.Name `xml:"mesh"`
-//     Source   []Source
-//     Polylist Polylist
-// }
-//
-// type Source struct{
-//     XMLName     xml.Name   `xml:"source"`
-//     Id          string     `xml:"attr"`
-//     Float_array FloatArray `xml:"float_array"`
-// }
-//
-// type FloatArray struct{
-//     XMLName xml.Name `xml:"float_array"`
-//     Id      string   `xml:"attr"`
-//     CDATA   string   `xml:"chardata"`
-//     Count   string   `xml:"attr"`
-// }
-//
-// type Polylist struct{
-//     XMLName xml.Name  `xml:"polylist"`
-//     Id      string    `xml:"attr"`
-//     Count   string    `xml:"attr"`
-//
-//     // List of integers, each specifying the number of vertices for one polygon
-//     VCount  string    `xml:"vcount"`
-//
-//     // list of integers that specify the vertex attributes
-//     P       string    `xml:"p"`
-// }
-//
-// type LibraryVisualScenes struct {
-//     XMLName      xml.Name       `xml:"library_visual_scenes"`
-//     VisualScene  VisualScene
-// }
-//
-// type VisualScene struct{
-//     XMLName      xml.Name       `xml:"visual_scene"`
-// }
 
 func LoadDocument(filename string) (*Collada, error) {
 	file, err := os.Open(filename)
@@ -1288,10 +1209,14 @@ func (collada *Collada) Export(filename string) error {
 		return err
 	}
 	defer file.Close()
-	w := bufio.NewWriter(file)
+	return collada.ExportToWriter(file)
+}
+
+func (collada *Collada) ExportToWriter(writer io.Writer) error {
+	w := bufio.NewWriter(writer)
 	w.WriteString(xml.Header)
 	w.Flush()
-	encoder := xml.NewEncoder(file)
+	encoder := xml.NewEncoder(writer)
 	encoder.Indent("", " ")
 	return encoder.Encode(collada)
 }
