@@ -1,8 +1,8 @@
 package collada
 
 import (
-    "testing"
-    "strings"
+	"strings"
+	"testing"
 )
 
 var emptyCollada string = `
@@ -11,26 +11,26 @@ var emptyCollada string = `
 `
 
 func TestingEmptyDocument(t *testing.T) {
-    reader := strings.NewReader(emptyCollada)
-    collada, err := LoadDocumentFromReader(reader)
-    if err != nil {
-        t.Error(err)
-        t.FailNow()
-    }
-    if collada.Version != Version1_5_0 {
-        t.Error("wrong version", collada.Version)
-    }
+	reader := strings.NewReader(emptyCollada)
+	collada, err := LoadDocumentFromReader(reader)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	if collada.Version != Version1_5_0 {
+		t.Error("wrong version", collada.Version)
+	}
 }
 
 func TestingCubeDocument(t *testing.T) {
-    reader := strings.NewReader("/Users/glen/Documents/blends/cube.dae")
-    collada, err := LoadDocumentFromReader(reader)
-    if err != nil {
-        t.Error(err)
-        t.FailNow()
-    }
-    err = collada.Export("~/out.dae")
-    if err != nil {
-        t.Error(err)
-    }
+	reader := strings.NewReader("/Users/glen/Documents/blends/cube.dae")
+	collada, err := LoadDocumentFromReader(reader)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	err = collada.Export("~/out.dae")
+	if err != nil {
+		t.Error(err)
+	}
 }
