@@ -20,6 +20,8 @@ type Uri string
 
 type UpAxis string
 
+type Id string
+
 const (
 	Xup UpAxis = "X_UP"
 	Yup UpAxis = "Y_UP"
@@ -100,7 +102,7 @@ type LibraryCameras struct {
 	HasId
 	HasName
 	HasAsset
-	Camera []Camera `xml:"camera"`
+	Camera []*Camera `xml:"camera"`
 	HasExtra
 }
 
@@ -131,7 +133,7 @@ type InstanceController struct {
 	HasSid
 	HasName
 	HasUrl
-	Skeleton     []Skeleton    `xml:"skeleton"`
+	Skeleton     []*Skeleton    `xml:"skeleton"`
 	BindMaterial *BindMaterial `xml:"bind_material"`
 	HasExtra
 }
@@ -254,14 +256,14 @@ type Source struct {
 type InputShared struct {
 	Offset   uint   `xml:"offset,attr"`
 	Semantic string `xml:"semantic,attr"`
-	Soruce   string `xml:"source,attr"`
+	Source   Uri `xml:"source,attr"`
 	Set      uint   `xml:"set,attr,omitempty"`
 }
 
 // InputUnshared declares the input semantics of a data source.
 type InputUnshared struct {
 	Semantic string `xml:"semantic,attr"`
-	Source   string `xml:"source,attr"`
+	Source   Uri `xml:"source,attr"`
 }
 
 // Extra provides arbitrary additional information about or related to its parent element.
@@ -318,7 +320,7 @@ type LibraryGeometries struct {
 	HasId
 	HasName
 	HasAsset
-	Geometry []Geometry `xml:"geometry"`
+	Geometry []*Geometry `xml:"geometry"`
 	HasExtra
 }
 
@@ -344,15 +346,15 @@ type Linestrips struct {
 
 //Mesh describes basic geometric meshes using vertex and primitive information.
 type Mesh struct {
-	Source     []Source     `xml:"source"`
+	Source     []*Source     `xml:"source"`
 	Vertices   Vertices     `xml:"vertices"`
-	Lines      []Lines      `xml:"lines"`
-	Linestrips []Linestrips `xml:"linestrips"`
-	Polygons   []Polygons   `xml:"polygons"`
-	Polylist   []Polylist   `xml:"polylist"`
-	Triangles  []Triangles  `xml:"triangles"`
-	Trifans    []Trifans    `xml:"trifans"`
-	Tristrips  []Tristrips  `xml:"tristrips"`
+	Lines      []*Lines      `xml:"lines"`
+	Linestrips []*Linestrips `xml:"linestrips"`
+	Polygons   []*Polygons   `xml:"polygons"`
+	Polylist   []*Polylist   `xml:"polylist"`
+	Triangles  []*Triangles  `xml:"triangles"`
+	Trifans    []*Trifans    `xml:"trifans"`
+	Tristrips  []*Tristrips  `xml:"tristrips"`
 	HasExtra
 }
 
@@ -368,11 +370,11 @@ type Polygons struct {
 }
 type H Ints
 type HasPhs struct {
-	Ph []Ph `xml:"ph"`
+	Ph []*Ph `xml:"ph"`
 }
 type Ph struct {
 	P P   `xml:"p"`
-	H []H `xml:"h"`
+	H []*H `xml:"h"`
 }
 
 //Polylist declares the binding of geometric primitives and vertex attributes for a <mesh>element.
@@ -425,7 +427,7 @@ type Tristrips struct {
 type Vertices struct {
 	HasId
 	HasName
-	Input []InputUnshared `xml:"input"`
+	Input []*InputUnshared `xml:"input"`
 	HasExtra
 }
 
@@ -458,7 +460,7 @@ type LibraryLights struct {
 	HasId
 	HasName
 	HasAsset
-	Light []Light `xml:"light"`
+	Light []*Light `xml:"light"`
 	HasExtra
 }
 
@@ -499,7 +501,7 @@ type LibraryFormulas struct {
 
 //Coverage provides information about the location of the visual scene in physical space.
 type Coverage struct {
-	GeographicLocation []GeographicLocation `xml:"geographic_location"`
+	GeographicLocation []*GeographicLocation `xml:"geographic_location"`
 }
 
 //Unit defines unit of distance for COLLADA elements and objects.
@@ -510,7 +512,7 @@ type Unit struct {
 
 //Asset defines asset-management information regarding its parent element.
 type Asset struct {
-	Contributor []Contributor `xml:"contributor"`
+	Contributor []*Contributor `xml:"contributor"`
 	Coverage    *Coverage     `xml:"coverage"`
 	Created     string        `xml:"created"`
 	Keywords    string        `xml:"keywords,omitempty"`
@@ -529,26 +531,26 @@ type Collada struct {
 	Version Version `xml:"version,attr"`
 	Base    Uri     `xml:"base,attr,omitempty"`
 	HasAsset
-	LibraryAnimationClips []LibraryAnimationClips `xml:"library_animation_clips"`
-	LibraryAnimations     []LibraryAnimations     `xml:"library_animations"`
-	// LibraryArticulatedSystems []LibraryArticulatedSystems `xml:"library_animation_clips"`
-	LibraryCameras     []LibraryCameras     `xml:"library_cameras"`
-	LibraryControllers []LibraryControllers `xml:"library_controllers"`
-	LibraryLights      []LibraryLights      `xml:"library_lights"`
-	LibraryImages      []LibraryImages      `xml:"library_images"`
-	LibraryEffects     []LibraryEffects     `xml:"library_effects"`
-	// LibraryForceFields []LibraryForceFields `xml:"library_force_fields"`
-	LibraryFormulas []LibraryFormulas `xml:"library_formulas"`
-	// LibraryJoints []LibraryJoints `xml:"library_joints"`
-	// LibraryKinematicModels []LibraryKinematicModels `xml:"library_kinematic_models"`
-	// LibraryKinematicScenes []LibraryKinematicScenes `xml:"library_kinematic_scenes"`
-	LibraryMaterials  []LibraryMaterials  `xml:"library_materials"`
-	LibraryGeometries []LibraryGeometries `xml:"library_geometries"`
-	// LibraryPhysicsNodes []LibraryPhysicsNodes `xml:"library_physics_nodes"`
-	// LibraryPhysicsMaterials []LibraryPhysicsMaterials `xml:"library_physics_materials"`
-	// LibraryPhysicsScenes []LibraryPhysicsScenes `xml:"library_physics_scenes"`
-	// LibraryPhysicsScenes []LibraryPhysicsScenes `xml:"library_physics_scenes"`
-	LibraryVisualScenes []LibraryVisualScenes `xml:"library_visual_scenes"`
+	LibraryAnimationClips []*LibraryAnimationClips `xml:"library_animation_clips"`
+	LibraryAnimations     []*LibraryAnimations     `xml:"library_animations"`
+	// LibraryArticulatedSystems []*LibraryArticulatedSystems `xml:"library_animation_clips"`
+	LibraryCameras     []*LibraryCameras     `xml:"library_cameras"`
+	LibraryControllers []*LibraryControllers `xml:"library_controllers"`
+	LibraryLights      []*LibraryLights      `xml:"library_lights"`
+	LibraryImages      []*LibraryImages      `xml:"library_images"`
+	LibraryEffects     []*LibraryEffects     `xml:"library_effects"`
+	// LibraryForceFields []*LibraryForceFields `xml:"library_force_fields"`
+	LibraryFormulas []*LibraryFormulas `xml:"library_formulas"`
+	// LibraryJoints []*LibraryJoints `xml:"library_joints"`
+	// LibraryKinematicModels []*LibraryKinematicModels `xml:"library_kinematic_models"`
+	// LibraryKinematicScenes []*LibraryKinematicScenes `xml:"library_kinematic_scenes"`
+	LibraryMaterials  []*LibraryMaterials  `xml:"library_materials"`
+	LibraryGeometries []*LibraryGeometries `xml:"library_geometries"`
+	// LibraryPhysicsNodes []*LibraryPhysicsNodes `xml:"library_physics_nodes"`
+	// LibraryPhysicsMaterials []*LibraryPhysicsMaterials `xml:"library_physics_materials"`
+	// LibraryPhysicsScenes []*LibraryPhysicsScenes `xml:"library_physics_scenes"`
+	// LibraryPhysicsScenes []*LibraryPhysicsScenes `xml:"library_physics_scenes"`
+	LibraryVisualScenes []*LibraryVisualScenes `xml:"library_visual_scenes"`
 	Scene               *Scene                `xml:"scene"`
 	HasExtra
 }
@@ -601,7 +603,7 @@ type LibraryVisualScenes struct {
 	HasId
 	HasName
 	HasAsset
-	VisualScene []VisualScene `xml:"visual_scene"`
+	VisualScene []*VisualScene `xml:"visual_scene"`
 	HasExtra
 }
 
@@ -613,24 +615,24 @@ type Node struct {
 	HasType
 	Layer string `xml:"layer,attr,omitempty"`
 	HasAsset
-	Lookat             []Lookat             `xml:"lookat"`
-	Matrix             []Matrix             `xml:"matrix"`
-	Translate          []Translate          `xml:"translate"`
-	Rotate             []Rotate             `xml:"rotate"`
-	Scale              []Scale              `xml:"scale"`
-	Skew               []Skew               `xml:"skew"`
-	InstanceCamera     []InstanceCamera     `xml:"instance_camera"`
-	InstanceController []InstanceController `xml:"instance_controller"`
-	InstanceGeometry   []InstanceGeometry   `xml:"instance_geometry"`
-	InstanceLight      []InstanceLight      `xml:"instance_light"`
-	InstanceNode       []InstanceNode       `xml:"instance_node"`
+	Lookat             []*Lookat             `xml:"lookat"`
+	Matrix             []*Matrix             `xml:"matrix"`
+	Translate          []*Translate          `xml:"translate"`
+	Rotate             []*Rotate             `xml:"rotate"`
+	Scale              []*Scale              `xml:"scale"`
+	Skew               []*Skew               `xml:"skew"`
+	InstanceCamera     []*InstanceCamera     `xml:"instance_camera"`
+	InstanceController []*InstanceController `xml:"instance_controller"`
+	InstanceGeometry   []*InstanceGeometry   `xml:"instance_geometry"`
+	InstanceLight      []*InstanceLight      `xml:"instance_light"`
+	InstanceNode       []*InstanceNode       `xml:"instance_node"`
 	HasNodes
 	HasExtra
 }
 
 //Scene embodies the entire set of information that can be visualized from the contents of a COLLADA resource.
 type Scene struct {
-	InstancePhysicsScene    []InstancePhysicsScene   `xml:"instance_physics_scene"`
+	InstancePhysicsScene    []*InstancePhysicsScene   `xml:"instance_physics_scene"`
 	InstanceVisualScene     *InstanceVisualScene     `xml:"instance_visual_scene"`
 	InstanceKinematicsScene *InstanceKinematicsScene `xml:"instance_kinematics_scene"`
 	HasExtra
@@ -648,7 +650,7 @@ type VisualScene struct {
 	HasName
 	HasAsset
 	HasNodes
-	EvaluateScene []EvaluateScene `xml:"evaluate_scene"`
+	EvaluateScene []*EvaluateScene `xml:"evaluate_scene"`
 	HasExtra
 }
 
@@ -719,8 +721,8 @@ type InstanceEffect struct {
 	HasId
 	HasName
 	HasUrl
-	TechniqueHint []TechniqueHint `xml:"technique_hint"`
-	Setparam      []Setparam      `xml:"setparam"`
+	TechniqueHint []*TechniqueHint `xml:"technique_hint"`
+	Setparam      []*Setparam      `xml:"setparam"`
 }
 
 //LibraryEffects Provides a library in which to place <effect> assets.
@@ -728,7 +730,7 @@ type LibraryEffects struct {
 	HasId
 	HasName
 	HasAsset
-	Effect []Effect `xml:"effect"`
+	Effect []*Effect `xml:"effect"`
 	HasExtra
 }
 
@@ -755,7 +757,7 @@ type TechniqueHint struct {
 
 //BindMaterial Binds a specific material to a piece of geometry, binding varying and uniform parameters at the same time.
 type BindMaterial struct {
-	Param []ParamCore `xml:"param"`
+	Param []*ParamCore `xml:"param"`
 	HasTechniqueCommon
 	HasTechnique
 	HasExtra
@@ -771,7 +773,7 @@ type LibraryMaterials struct {
 	HasId
 	HasName
 	HasAsset
-	Material []Material `xml:"material"`
+	Material []*Material `xml:"material"`
 	HasExtra
 }
 
@@ -1073,24 +1075,48 @@ type TexturePipeline struct {
 	//TODO
 }
 
-type P Ints
+type P struct {
+    Ints
+}
 
-type Floats Values
-type Bools Values
-type IdRefs Values
-type Ints Values
-type Names Values
-type SidRefs Values
-type Tokens Values
+type Floats struct {
+    Values
+}
+type Bools struct {
+    Values
+}
+type IdRefs struct {
+    Values
+}
+type Ints struct {
+    Values
+}
+type Names struct {
+    Values
+}
+type SidRefs struct {
+    Values
+}
+type Tokens struct {
+    Values
+}
 
 type Values struct {
 	V string `xml:",chardata"`
 }
 
-type Float3x3 Floats
-type Float4x4 Floats
-type Float4 Floats
-type Float3 Floats
+type Float3x3 struct {
+    Floats
+}
+type Float4x4 struct {
+    Floats
+}
+type Float4 struct {
+    Floats
+}
+type Float3 struct {
+    Floats
+}
 
 type Float struct {
 	HasSid
@@ -1098,13 +1124,13 @@ type Float struct {
 }
 
 type HasNewparam struct {
-	Newparam []Newparam `xml:"newparam"`
+	Newparam []*Newparam `xml:"newparam"`
 }
 type HasAnnotate struct {
-	Annotate []Annotate `xml:"annotate"`
+	Annotate []*Annotate `xml:"annotate"`
 }
 type HasSharedInput struct {
-	Input []InputShared `xml:"input"`
+	Input []*InputShared `xml:"input"`
 }
 type HasMaterial struct {
 	Material string `xml:"material,attr,omitempty"`
@@ -1119,7 +1145,7 @@ type HasType struct {
 	Type string `xml:"type,attr,omitempty"`
 }
 type HasId struct {
-	Id string `xml:"id,attr,omitempty"`
+	Id Id `xml:"id,attr,omitempty"`
 }
 type HasUrl struct {
 	Url Uri `xml:"url,attr,omitempty"`
@@ -1134,22 +1160,22 @@ type HasNodes struct {
 	Node []*Node `xml:"node"`
 }
 type HasExtra struct {
-	Extra []Extra `xml:"extra"`
+	Extra []*Extra `xml:"extra"`
 }
 type HasTechniqueCommon struct {
 	TechniqueCommon TechniqueCommon `xml:"technique_common"`
 }
 type HasTechnique struct {
-	TechniqueCore []TechniqueCore `xml:"technique,omitempty"`
+	TechniqueCore []*TechniqueCore `xml:"technique,omitempty"`
 }
 type HasTechniqueFx struct {
-	TechniqueFx []TechniqueFx `xml:"technique,omitempty"`
+	TechniqueFx []*TechniqueFx `xml:"technique,omitempty"`
 }
 type HasP struct {
 	P *P `xml:"p"`
 }
 type HasPs struct {
-	P []P `xml:"p"`
+	P []*P `xml:"p"`
 }
 
 func LoadDocument(filename string) (*Collada, error) {
